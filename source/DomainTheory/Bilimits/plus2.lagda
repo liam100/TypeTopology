@@ -14,6 +14,19 @@ module DomainTheory.Bilimits.plus2
 
 open PropositionalTruncation pt
 
+open import DomainTheory.Basics.Exponential pt fe 𝓤₀
+open import DomainTheory.Basics.Pointed pt fe 𝓤₀
+open import DomainTheory.Lifting.LiftingSet pt fe 𝓤₀ pe
+open import DomainTheory.Lifting.LiftingDcpo pt fe 𝓤₀ pe
+open import DomainTheory.Basics.Miscelanea pt fe 𝓤₀
+open import Lifting.Lifting 𝓤₀ hiding (⊥)
+
+open import Naturals.Order
+
+{- open import Naturals.Order hiding (subtraction')
+open import Naturals.Addition renaming (_+_ to _+'_)
+open import Notation.Order -}
+
 open import UF.Base
 open import UF.UniverseEmbedding
 
@@ -179,25 +192,55 @@ module _ (𝓓 : DCPO {𝓤} {𝓣}) (𝓔 : DCPO {𝓤'} {𝓣'}) where
               
               d : is-Directed 𝓔 b
               d = (∣_∣ i1 , λ i j → ∥∥-functor (λ (k , (p1 , p2)) → k , (lower (transport (λ z → inr (b i) ⊑ z) ((eq2 k)⁻¹) (transport (λ z → z ⊑ (α k)) ((eq2 i)⁻¹) p1)) , lower (transport (λ z → inr (b j) ⊑ z) ((eq2 k)⁻¹) (transport (λ z → z ⊑ (α k)) ((eq2 j)⁻¹) p2)))) (semi i j))
+
+
+
+
+
+N-dcpo : DCPO {𝓤₀} {𝓤₀}
+N-dcpo = ℕ , (_≤ℕ_ , ({!!} , ≤-is-prop-valued , ≤-refl , ≤-trans , ≤-anti) , {!!})
+
+
+𝓛-functor : {X Y : 𝓤 ̇} -> (X -> Y) -> (𝓛 X) -> (𝓛 Y)
+𝓛-functor f (P , φ , i) = P , f ∘ φ , i
+
+𝓛-func-dcpo : {𝓓 𝓔 : DCPO {𝓤} {𝓣}} -> DCPO[ 𝓓 , 𝓔 ] -> DCPO[ (freely-add-⊥.𝓛-DCPO 𝓓) , (freely-add-⊥.𝓛-DCPO 𝓔) ]
+𝓛-func-dcpo (f , cf) = 𝓛-functor f , {!!}
+  where
+    mf2 : (𝓓 𝓔 : DCPO {𝓤} {𝓣}) -> ((g , cg) : DCPO[ 𝓓 , 𝓔 ]) -> is-monotone (freely-add-⊥.𝓛-DCPO 𝓓) (freely-add-⊥.𝓛-DCPO 𝓔) (𝓛-functor g)
+    mf2 𝓓 𝓔 (g , cg) = λ (_ , φ , _) (_ , ψ , _) (h , k) -> h , λ p → mf (φ p) (ψ (h p)) (k p)
+      where
+        mf : is-monotone 𝓓 𝓔 g
+        mf = monotone-if-continuous 𝓓 𝓔 (g , cg)
+
+
+𝓓 : ℕ → DCPO {𝓤₁} {𝓤₁}
+𝓓 zero = 𝓛-DCPO {𝓤₀} {𝟘{𝓤₀}} (props-are-sets 𝟘-is-prop)
+𝓓 (succ n) = freely-add-⊥.𝓛-DCPO (+-DCPO N-dcpo (𝓓 n ⟹ᵈᶜᵖᵒ freely-add-⊥.𝓛-DCPO (𝓓 n)))
+
+𝓓-diagram : (n : ℕ)
+          → DCPO[ 𝓓 n , 𝓓 (succ n) ]
+          × DCPO[ 𝓓 (succ n) , 𝓓 n ]
+𝓓-diagram zero = ((λ x → 𝟘 , 𝟘-elim , 𝟘-is-prop) , constant-functions-are-continuous (𝓓 0) (𝓓 1))
+                 , ((λ x → 𝟘 , 𝟘-elim , 𝟘-is-prop) , constant-functions-are-continuous (𝓓 1) (𝓓 0))
+𝓓-diagram (succ n) = (e , {!!}) , ({!!} , {!!})
+  where
+    en : DCPO[ 𝓓 n , 𝓓 (succ n) ]
+    en = pr₁ (𝓓-diagram n)
+    pn : DCPO[ 𝓓 (succ n) , 𝓓 n ]
+    pn = pr₂ (𝓓-diagram n)
+    e : ⟨ 𝓓 (succ n) ⟩ → ⟨ 𝓓 (succ (succ n)) ⟩
+    e = 𝓛-functor (dep-cases (λ x → inl x)
+                   (λ f → inr (DCPO-∘₃ (𝓓 (succ n)) (𝓓 n) (freely-add-⊥.𝓛-DCPO (𝓓 n)) (freely-add-⊥.𝓛-DCPO (𝓓 (succ n))) pn f (𝓛-func-dcpo en))))
+
+{-DCPO-∘₃ (𝓓 (succ n)) (𝓓 n) (𝓓 n) (𝓓 (succ n)) (pr₂ (𝓓-diagram n)) f (pr₁ (𝓓-diagram n))-}
+
+{-(e , e-continuity) , (p , p-continuity)-}
+
+
+
+
+
           
 
-{-leftize : (i : I) -> (x : ⟨ 𝓓 ⟩) -> (j : I) -> Σ k ꞉ I , (inl x ⊑ α k) × (α j ⊑ α k) -> Σ b ꞉ ⟨ 𝓓 ⟩ , inl b ＝ α j
-          leftize i x j (k , p) = dep-cases (λ y q -> (y , refl)) (λ y q -> 𝟘-elim ((dep-cases (λ h -> pr₁) (λ h -> pr₂) (α k)) q)) (α j) p
-
-𝓤₀ (𝓤 ⊔ 𝓤') lower (pr₁ (dir i j)) , ?
-
-transport (λ z → inl (b i) ⊑ z) ((eq2 k)⁻¹) (transport (λ z → z ⊑ (α k)) ((eq2 i)⁻¹) p1)
-
-          leftfunc : (∥_∥ I) -> (x : ⟨ 𝓓 ⟩) -> ((j : I) -> ∃ k ꞉ I , (inl x ⊑ α k) × (α j ⊑ α k)) -> ∃ b ꞉ (I → ⟨ 𝓓 ⟩) , inl ∘ b ＝ α
-
-          leftfunc inh x f = ∥∥-rec ∃-is-prop (λ i -> leftize i x) inh
-
-          lem : (I : 𝓥 ̇ ) (α : I → D) → (i : I) → 
-          lem I α δ = ?
-
-dep-cases (λ y -> (y , refl)) (λ y -> 𝟘-elim ((dep-cases (λ h -> pr₁) (λ h -> pr₂) (α k)) p)) (α j)
-
-(λ j -> (∥∥-functor (λ k -> pr₁ (leftize i x j k)) (f j))
-(∥∥-functor (λ k -> pr₁ (leftize i x j k)) (f j))
--}
 \end{code}
