@@ -193,13 +193,46 @@ module _ (𝓓 : DCPO {𝓤} {𝓣}) (𝓔 : DCPO {𝓤'} {𝓣'}) where
               d : is-Directed 𝓔 b
               d = (∣_∣ i1 , λ i j → ∥∥-functor (λ (k , (p1 , p2)) → k , (lower (transport (λ z → inr (b i) ⊑ z) ((eq2 k)⁻¹) (transport (λ z → z ⊑ (α k)) ((eq2 i)⁻¹) p1)) , lower (transport (λ z → inr (b j) ⊑ z) ((eq2 k)⁻¹) (transport (λ z → z ⊑ (α k)) ((eq2 j)⁻¹) p2)))) (semi i j))
 
-{-
+
 N-is-set : is-set ℕ
-N-is-set = {!!}
+N-is-set p q = {!!}
   where
-    propN : (n m : ℕ) -> is-prop (n ＝ m)
-    propN n .n refl refl = {!refl!}
--}
+    eq : ℕ -> ℕ -> 𝓤₀ ̇
+    eq 0 0 = 𝟙
+    eq 0 (succ n) = 𝟘
+    eq (succ m) 0 = 𝟘
+    eq (succ m) (succ n) = eq m n
+
+    eq-is-prop-valued : (m n : ℕ) → is-prop (eq m n)
+    eq-is-prop-valued 0 0 = 𝟙-is-prop
+    eq-is-prop-valued 0 (succ n) = 𝟘-is-prop
+    eq-is-prop-valued (succ m) 0 = 𝟘-is-prop
+    eq-is-prop-valued (succ m) (succ n) = eq-is-prop-valued m n
+
+    eqrefl : (n : ℕ) -> (eq n n)
+    eqrefl 0 = ⋆
+    eqrefl (succ n) = eqrefl n
+
+    eq-to-p : (m n : ℕ) -> (eq m n) -> (m ＝ n)
+    eq-to-p 0 0 ⋆ = refl
+    eq-to-p (succ m) (succ n) z = ap succ (eq-to-p m n z)
+
+    p-to-eq : (m n : ℕ) -> (m ＝ n) -> (eq m n)
+    p-to-eq m n p = transport (λ n -> eq m n) p (eqrefl m)
+
+    p-after-eq : (m n : ℕ) -> (p : m ＝ n) -> eq-to-p m n (p-to-eq m n p) ＝ p
+    p-after-eq m n p = J (λ r s q -> (eq-to-p r s (p-to-eq r s q) ＝ q)) same p
+      where
+        same : (n : ℕ) -> eq-to-p n n (p-to-eq n n refl) ＝ refl
+        same 0 = refl
+        same (succ n) = ap (ap succ) (same n)
+
+    eq-same : (m n : ℕ) -> (p q : m ＝ n) -> (p-to-eq m n p) ＝ (p-to-eq m n q)
+    eq-same m n p q = eq-is-prop-valued m n (p-to-eq m n p) (p-to-eq m n q)
+
+    propN : (m n : ℕ) -> is-prop (m ＝ n)
+    propN m n p q = transport (λ l -> l ＝ q) (p-after-eq m n p) (transport (λ l -> eq-to-p m n l ＝ q) ((eq-same m n p q)⁻¹) (p-after-eq m n q))
+
 
 
 {-𝟙-is-set-}
